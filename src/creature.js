@@ -13,8 +13,8 @@ class Creature {
 
     this.reproduce = false;
 
-    this.reproduceCounter = Math.random() * 0.1;
-    this.hunger = parent ? parent.hunger : Math.random();
+    this.reproduceCounter = parent ? 0 : Math.random();
+    this.hunger = parent ? 0 : Math.random();
     this.starved = false;
 
     this.r = 5.0;
