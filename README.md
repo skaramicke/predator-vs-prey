@@ -69,6 +69,6 @@ The second neuron is the change in direction. The creature can turn all the way 
 3. Have ideas or critisism or praise or comments
 4. Tweet them to [@skaramicke](https://twitter.com/skaramicke)
 
-### Ideas
+# Ideas
 1. Perhaps the mutation rate should be a part of the genome.
 2. There definitely needs to be a deployment flow that puts the code online somewhere.
