@@ -5,9 +5,12 @@ import Creature from "./creature";
 import collision from "./collision";
 
 const ray_length = 300.0;
+import {rays} from './creature';
 
-let bestPredator = null;
-let bestPrey = null;
+let bestPredators = [];
+let bestPreys = [];
+
+let showHud = false;
 
 document.body.style =
   "height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden;";
@@ -19,19 +22,34 @@ const ctx = canvas.getContext("2d");
 let predators = [];
 let prey = [];
 
-const init = (bestPredator, bestPrey) => {
-  console.log("init", bestPredator, bestPrey);
-
+const init = () => {
   let newPredators = [];
   let newPrey = [];
-  for (let i = 0; i < 50; i++) {
-    newPredators.push(new Creature(bestPredator, true, ctx, true));
-    newPrey.push(new Creature(bestPrey, false, ctx, true));
+  if (bestPredators.length > 0 && bestPreys.length > 0) {
+    bestPredators.forEach((bestPredator) => {
+      for (let i = 0; i < 10; i++) {
+        newPredators.push(new Creature(bestPredator, true, ctx, true));
+      }
+    });
+    bestPreys.forEach((bestPrey) => {
+      for (let i = 0; i < 10; i++) {
+        newPrey.push(new Creature(bestPrey, false, ctx, true));
+      }
+    });
+  } else {
+    for (let i = 0; i < 50; i++) {
+      newPredators.push(new Creature(null, true, ctx));
+      newPrey.push(new Creature(null, false, ctx));
+    }
   }
   predators = newPredators;
+  predators[0].log = true;
+  
   prey = newPrey;
+  prey[0].log = true;
+
   gameOn = true;
-  console.log('Init complete', predators, prey);
+  console.log('new generation', predators.length, prey.length);
   loop();
 }
 
@@ -42,11 +60,12 @@ let stats = [
   }
 ];
 
-const rayWidthRadians = Math.PI / 5;
+const rayWidthRadians = Math.PI / rays;
 
 let gameOn = false;
 
 function loop() {
+
   if (prey.length === 0 || predators.length === 0) {
     console.log('One species extinct');
     gameOn = false;
@@ -54,6 +73,8 @@ function loop() {
 
   if (gameOn) {
     requestAnimationFrame(loop);
+  } else {
+    init();
   }
 
 
@@ -66,24 +87,26 @@ function loop() {
 
   const creatures = predators.concat(prey);
   creatures.forEach((creature) => {
-    creature.draw(ctx);
+    creature.draw(ctx, showHud);
     // Look for nearby creatures in 5 polygons around the creature's front
     const rayHits = [];
-    const forwardAngle = creature.angle;
-    const startAngle = forwardAngle - Math.PI / 2;
-    const endAngle = forwardAngle + Math.PI / 2;
-    for (let rayStart = startAngle; rayStart < endAngle; rayStart += rayWidthRadians) {
+    
+    for (let rayi = 0; rayi < rays; rayi++) {
+      const rayAngle = creature.angle + rayWidthRadians * (rayi - rays / 2);
       const points = [
         [creature.x, creature.y],
-        [creature.x + ray_length * Math.cos(rayStart % (2 * Math.PI)), creature.y + ray_length * Math.sin(rayStart % (2 * Math.PI))],
-        [creature.x + ray_length * Math.cos((rayStart + rayWidthRadians) % (2 * Math.PI)), creature.y + ray_length * Math.sin((rayStart + rayWidthRadians) % (2 * Math.PI))],
+        [creature.x + ray_length * Math.cos(rayAngle % (2 * Math.PI)), creature.y + ray_length * Math.sin(rayAngle % (2 * Math.PI))],
+        [creature.x + ray_length * Math.cos((rayAngle + rayWidthRadians) % (2 * Math.PI)), creature.y + ray_length * Math.sin((rayAngle + rayWidthRadians) % (2 * Math.PI))],
       ]
-      // ctx.strokeStyle = 'rgba(255, 255, 255, 0.01)';
-      // ctx.beginPath();
-      // ctx.moveTo(...points[0]);
-      // ctx.lineTo(...points[1]);
-      // ctx.lineTo(...points[2]);
-      // ctx.closePath();
+      if (creature.log && showHud) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.beginPath();
+        ctx.moveTo(...points[0]);
+        ctx.lineTo(...points[1]);
+        ctx.lineTo(...points[2]);
+        ctx.closePath();
+        ctx.stroke();
+      }
 
       let hits = [];
 
@@ -93,7 +116,6 @@ function loop() {
         }
         if (collision(points, [otherCreature.x, otherCreature.y])) {
           ctx.fillStyle = `rgba(${otherCreature.predator ? '255' : '0'}, ${otherCreature.predator ? '0' : '255'}, 0, 0.5)`;
-          // ctx.stroke();
           hits.push(otherCreature);
         }
       });
@@ -109,9 +131,8 @@ function loop() {
           }
         });
         
-        const hitValue = (1 - (closestDistance / ray_length)) * closestHit.predator == creature.predator ? 1 : -1;
+        const hitValue = (1.0 - (closestDistance / ray_length)) * (closestHit.predator == creature.predator ? 1.0 : -1.0);
         rayHits.push(hitValue);
-
       } else {
         rayHits.push(0.0);
       }
@@ -132,7 +153,7 @@ function loop() {
       }
     });
 
-    creature.update(rayHits, width, height);
+    creature.update(rayHits, width, height, showHud, ctx);
 
     if (creature.reproduce) {
       creature.debug('Reproducing');
@@ -149,16 +170,46 @@ function loop() {
 
   killCreatures.forEach((creature) => {
     if (creature.predator) {
-      if (bestPredator == null || creature.age > bestPredator.age) {
-        bestPredator = creature;
-        bestPredator.hunger = 0;
-      }
+      bestPredators.push(creature);
+      bestPredators.sort((a, b) => b.age - a.age);
+      bestPredators = bestPredators.slice(0, 5);
       predators.splice(predators.indexOf(creature), 1);
-    } else {
-      if (!bestPrey || creature.age > bestPrey.age) {
-        bestPrey = creature;
+
+      if (creature.log) {
+        // Find the alive predator with highest age
+        let highestAge = 0;
+        let highestAgePredator = null;
+        predators.forEach((predator) => {
+          if (predator.age > highestAge) {
+            highestAge = predator.age;
+            highestAgePredator = predator;
+          }
+        });
+        if (highestAgePredator) {
+          highestAgePredator.log = true;
+        }
       }
+
+    } else {
+      bestPreys.push(creature);
+      bestPreys.sort((a, b) => b.age - a.age);
+      bestPreys = bestPreys.slice(0, 5);
       prey.splice(prey.indexOf(creature), 1);
+
+      if (creature.log) {
+        // Find the alive prey with highest age
+        let highestAge = 0;
+        let highestAgePrey = null;
+        prey.forEach((prey) => {
+          if (prey.age > highestAge) {
+            highestAge = prey.age;
+            highestAgePrey = prey;
+          }
+        });
+        if (highestAgePrey) {
+          highestAgePrey.log = true;
+        }
+      }
     }
   });
 
@@ -196,9 +247,8 @@ function loop() {
   ctx.stroke();
 }
 
-setInterval(() => {
-  if (!gameOn) {
-    init(bestPredator, bestPrey);
-  }
-}, 1000);
+window.onclick = (e) => {
+  showHud = !showHud;
+}
 
+loop();

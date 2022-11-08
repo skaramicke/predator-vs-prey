@@ -1,8 +1,108 @@
 import { lerpColor } from "./lerpColor";
 
-const rays = 5;
-const hidden_neruons = 10;
-const maxSpeed = 5.0;
+export const rays = 5;
+const hidden_neruons = 7;
+const maxSpeed = 10.0;
+
+const drawNetwork = (
+  inputActivations,
+  hiddenLayerWeights,
+  hiddenLayerActivations,
+  outputActivations,
+  ctx,
+  leftSide,
+  x, y,
+) => {
+  const left = leftSide ? 0 : ctx.canvas.clientWidth - 200;
+  // Draw input layer
+  for (let i = 0; i < inputActivations.length; i++) {
+    ctx.beginPath();
+    const activation = leftSide ? -inputActivations[i] : inputActivations[i];
+    let color
+    if (activation > 0) {
+      color = lerpColor('#EEEEEE', '#00ff00', Math.abs(activation));
+    } else {
+      color = lerpColor('#EEEEEE', '#ff0000', Math.abs(activation));
+    }
+    ctx.fillStyle = color;
+    ctx.arc(left + 10, 10 + i * 20, 8, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.closePath();
+  }
+
+  // Draw hidden layer based on number of hidden_neurons
+  for (let i = 0; i < hiddenLayerActivations.length; i++) {
+    ctx.beginPath();
+    let activation = hiddenLayerActivations[i];
+    if (activation > 0) {
+      ctx.fillStyle = lerpColor('#EEEEEE', '#00ff00', Math.abs(activation));
+    } else {
+      ctx.fillStyle = lerpColor('#EEEEEE', '#ff0000', Math.abs(activation));
+    }
+    ctx.arc(left + 50, 10 + i * 20, 8, 0, 2 * Math.PI);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Draw lines between input and hidden layer
+  for (let i = 0; i < inputActivations.length; i++) {
+    for (let j = 0; j < hiddenLayerActivations.length; j++) {
+      ctx.beginPath();
+      ctx.strokeStyle = lerpColor('#FF0000', '#00FF00', (hiddenLayerWeights[j*i] + 1.0) / 2.0);
+      ctx.moveTo(left + 10, 10 + i * 20);
+      ctx.lineTo(left + 50, 10 + j * 20);
+      ctx.stroke();
+      ctx.closePath();
+    }
+  }
+
+  // Draw output layer
+  for (let i = 0; i < outputActivations.length; i++) {
+    ctx.beginPath();
+    let activation = outputActivations[i];
+    if (activation > 0) {
+      ctx.fillStyle = lerpColor('#EEEEEE', '#00ff00', Math.abs(activation));
+    } else {
+      ctx.fillStyle = lerpColor('#EEEEEE', '#ff0000', Math.abs(activation));
+    }
+    ctx.arc(left + 90, 10 + i * 20, 8, 0, 2 * Math.PI);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  const outputWeightsOffset = inputActivations.length * hiddenLayerActivations.length;
+  // Draw lines between hidden and output layer
+  for (let i = 0; i < hiddenLayerActivations.length; i++) {
+    for (let j = 0; j < outputActivations.length; j++) {
+      ctx.beginPath();
+      ctx.strokeStyle = lerpColor('#FF0000', '#00FF00', (hiddenLayerWeights[outputWeightsOffset + j*i] + 1.0) / 2.0);
+      ctx.moveTo(left + 50, 10 + i * 20);
+      ctx.lineTo(left + 90, 10 + j * 20);
+      ctx.stroke();
+      ctx.closePath();
+    }
+  }
+
+
+  // Draw a line to x, y
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+  ctx.moveTo(left + 10, 10 + inputActivations.length * 20);
+  ctx.lineTo(x, y);
+  ctx.stroke();
+  ctx.closePath();
+
+  // // Draw hidden layer
+  // for (let i = 0; i < hiddenLayerWeights.length; i++) {
+  //   const weights = hiddenLayerWeights[i];
+  //   const activation = hiddenLayerActivations[i];
+  //   const color = lerpColor('#CCCCCC', '#ffffff', activation);
+  //   ctx.fillStyle = color;
+  //   ctx.arc(left + 50, y + i * 20, 10, 0, 2 * Math.PI);
+  //   ctx.fill();
+  // }
+
+};
 
 class Creature {
   constructor(parent = null, predator, ctx, init = false) {
@@ -53,7 +153,7 @@ class Creature {
   // A ray hit is a positive value between 0 and 1 if it hits something of the same type as the creature.
   // A ray hit is a negative value between 0 and -1 if it hits something of the opposite type as the creature.
   // The larger the absolute value of the ray hit, the closer the object is to the creature.
-  update(rayHits, width, height) {
+  update(rayHits, width, height, showHud = false, ctx) {
     // Calculate the output of the neural network
     let hidden_layer = [];
     for (let i = 0; i < hidden_neruons; i++) {
@@ -79,6 +179,19 @@ class Creature {
       sum = sum / (hidden_neruons * 1.0);
 
       output_layer.push(sum);
+    }
+
+    if (this.log && showHud) {
+      drawNetwork(
+        rayHits,
+        this.weights,
+        hidden_layer,
+        output_layer,
+        ctx,
+        this.predator,
+        this.x,
+        this.y
+      )
     }
 
     // Update the creature's position
@@ -130,7 +243,7 @@ class Creature {
     this.age += 1;
   }
 
-  draw(ctx) {
+  draw(ctx, showHud = false) {
     ctx.beginPath();
     ctx.arc(
       this.x,
@@ -158,7 +271,7 @@ class Creature {
     ctx.fillStyle = color;
     ctx.fill();
 
-    if (this.log) {
+    if (this.log && showHud) {
       ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.r + 10, 0, Math.PI * 2, false);
