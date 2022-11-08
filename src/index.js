@@ -60,7 +60,7 @@ let stats = [
   }
 ];
 
-const rayWidthRadians = Math.PI / rays;
+const rayWidthRadians = Math.PI / rays * 2;
 
 let gameOn = false;
 
@@ -92,7 +92,7 @@ function loop() {
     const rayHits = [];
     
     for (let rayi = 0; rayi < rays; rayi++) {
-      const rayAngle = creature.angle + rayWidthRadians * (rayi - rays / 2);
+      const rayAngle = creature.angle + rayWidthRadians * (rayi - rays);
       const points = [
         [creature.x, creature.y],
         [creature.x + ray_length * Math.cos(rayAngle % (2 * Math.PI)), creature.y + ray_length * Math.sin(rayAngle % (2 * Math.PI))],

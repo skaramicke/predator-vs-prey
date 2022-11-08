@@ -1,7 +1,7 @@
 import { lerpColor } from "./lerpColor";
 
-export const rays = 5;
-const hidden_neruons = 7;
+export const rays = 10;
+const hidden_neruons = 20;
 const maxSpeed = 10.0;
 
 const drawNetwork = (
