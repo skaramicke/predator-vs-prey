@@ -21,7 +21,7 @@ class Creature {
     this.r = 5.0;
 
     // Weights between input layers and hidden layer and hidden layer and output layer
-    for (let i = 0; i < (rays + 3) * hidden_neruons + 2 * hidden_neruons; i++) {
+    for (let i = 0; i < (rays + 4) * hidden_neruons + 2 * hidden_neruons; i++) {
       let weight;
       if (parent) {
         weight = (parent.weights[i] + parent.weights[i]) / 2;
@@ -61,6 +61,7 @@ class Creature {
     const x_as_float = (this.x / width) * 2 - 1;
     const y_as_float = (this.y / height) * 2 - 1;
     const angle_as_float = (this.angle / (Math.PI * 2)) * 2 - 1;
+    const speed_as_float = (this.speed / maxSpeed) * 2 - 1;
 
     let hidden_layer = [];
     for (let i = 0; i < hidden_neruons; i++) {
@@ -73,6 +74,7 @@ class Creature {
       sum += x_as_float * this.weights[rays * hidden_neruons + i];
       sum += y_as_float * this.weights[rays * hidden_neruons + i + 1];
       sum += angle_as_float * this.weights[rays * hidden_neruons + i + 2];
+      sum += speed_as_float * this.weights[rays * hidden_neruons + i + 3];
 
       // Normalize sum to be between -1 and 1
       sum = sum / (rays * 1.0);
@@ -96,7 +98,7 @@ class Creature {
 
     if (this.log && showHud) {
       drawNetwork(
-        [...rayHits, x_as_float, y_as_float, angle_as_float],
+        [...rayHits, x_as_float, y_as_float, angle_as_float, speed_as_float],
         this.weights,
         hidden_layer,
         output_layer,
