@@ -8,7 +8,19 @@ const ray_length = 300.0;
 import {rays} from './creature';
 
 let bestPredators = [];
+
+// Try to load bestPredators from localstorage
+if (localStorage.getItem('bestPredators')) {
+  bestPredators = JSON.parse(localStorage.getItem('bestPredators'));
+  console.log('Loaded bestPredators from localstorage', bestPredators);
+}
+
 let bestPreys = [];
+// Try to load bestPreys from localstorage
+if (localStorage.getItem('bestPreys')) {
+  bestPreys = JSON.parse(localStorage.getItem('bestPreys'));
+  console.log('Loaded bestPreys from localstorage:', bestPreys);
+}
 
 let showHud = false;
 
@@ -76,7 +88,6 @@ function loop() {
   } else {
     init();
   }
-
 
   ctx.clearRect(0, 0, width, height);
   ctx.fillStyle = "rgba(0, 0, 0, 1.0)";
@@ -173,6 +184,13 @@ function loop() {
       bestPredators.push(creature);
       bestPredators.sort((a, b) => b.age - a.age);
       bestPredators = bestPredators.slice(0, 5);
+
+      if (bestPredators.indexOf(creature) !== -1) {
+        // Save bestPredators in localStorage
+        console.log('Saving bestPredators');
+        localStorage.setItem('bestPredators', JSON.stringify(bestPredators));
+      }
+
       predators.splice(predators.indexOf(creature), 1);
 
       if (creature.log) {
@@ -194,6 +212,14 @@ function loop() {
       bestPreys.push(creature);
       bestPreys.sort((a, b) => b.age - a.age);
       bestPreys = bestPreys.slice(0, 5);
+
+      // If creature is in the list of best preys, save the list to localStorage
+      if (bestPreys.indexOf(creature) !== -1) {
+        // Save bestPreys in localstorage
+        console.log('Saving bestPreys');
+        localStorage.setItem('bestPreys', JSON.stringify(bestPreys));
+      }
+
       prey.splice(prey.indexOf(creature), 1);
 
       if (creature.log) {
