@@ -120,7 +120,7 @@ class Creature {
     this.r = 5.0;
 
     // Weights between input layers and hidden layer and hidden layer and output layer
-    for (let i = 0; i < rays * hidden_neruons + 2 * hidden_neruons; i++) {
+    for (let i = 0; i < (rays + 3) * hidden_neruons + 2 * hidden_neruons; i++) {
       let weight;
       if (parent) {
         weight = (parent.weights[i] + parent.weights[i]) / 2;
@@ -155,12 +155,24 @@ class Creature {
   // The larger the absolute value of the ray hit, the closer the object is to the creature.
   update(rayHits, width, height, showHud = false, ctx) {
     // Calculate the output of the neural network
+
+    // X as float between -1 and 1
+    const x_as_float = (this.x / width) * 2 - 1;
+    const y_as_float = (this.y / height) * 2 - 1;
+    const angle_as_float = (this.angle / (Math.PI * 2)) * 2 - 1;
+
     let hidden_layer = [];
     for (let i = 0; i < hidden_neruons; i++) {
       let sum = 0;
       for (let j = 0; j < rays; j++) {
         sum += rayHits[j] * this.weights[j * hidden_neruons + i];
       }
+
+      // Add x, y, and angle
+      sum += x_as_float * this.weights[rays * hidden_neruons + i];
+      sum += y_as_float * this.weights[rays * hidden_neruons + i + 1];
+      sum += angle_as_float * this.weights[rays * hidden_neruons + i + 2];
+
       // Normalize sum to be between -1 and 1
       sum = sum / (rays * 1.0);
 
@@ -183,7 +195,7 @@ class Creature {
 
     if (this.log && showHud) {
       drawNetwork(
-        rayHits,
+        [...rayHits, x_as_float, y_as_float, angle_as_float],
         this.weights,
         hidden_layer,
         output_layer,
@@ -207,18 +219,18 @@ class Creature {
     this.x += Math.cos(this.angle) * this.speed;
     this.y += Math.sin(this.angle) * this.speed;
 
-    // Wrap the creature around the screen
+    // Stop the creature at the walls
     if (this.x < 0) {
-      this.x += width;
+      this.x = 0;
     }
     if (this.x > width) {
-      this.x -= width;
+      this.x = width;
     }
     if (this.y < 0) {
-      this.y += height;
+      this.y = 0;
     }
     if (this.y > height) {
-      this.y -= height;
+      this.y = height;
     }
 
     // Increase reproduce counter
