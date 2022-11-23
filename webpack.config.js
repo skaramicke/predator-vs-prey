@@ -6,7 +6,7 @@ module.exports = {
   mode: "development",
   plugins: [
     new HtmlWebpackPlugin({
-      title: "Friend or Foe",
+      title: "Predator vs Prey",
       inject: "body",
     }),
   ],
